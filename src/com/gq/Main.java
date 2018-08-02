@@ -1,5 +1,7 @@
 package com.gq;
 
+import java.util.Arrays;
+
 public class Main {
     enum action{
         up, left, down, right
@@ -10,38 +12,41 @@ public class Main {
             {0, 0, 0, 0}};
 
     public static void main(String[] args) {
-        float theta = 0f;
+        float theta;
         float R = -0.04f;
-        float[][] pa = new float[][]{{0.8f}, {0.1f}, {0.1f}};
-        int i = 2;
-        int j = 0;
+        float[][] pa = new float[][]{{0.1f}, {0.8f}, {0.1f}};
         int k = 0;
-        float temp;
+        float[][] temp = new float[3][4];
 
         do {
-            temp = U[i][j];
-            if (!((i ==0 && j==3)||(i ==1 && j==3))){
-                float[][] actionArr = multiMatrix(actionArr(i+1, j+1), 4, 3, pa, 3, 1);
-                printArr(actionArr, 4, 1);
-                U[i][j] = R + Max(actionArr);
+            for(int i = 0;i < U.length;i++){
+                temp[i] = U[i].clone();
             }
-            if ((U[i][j] - temp) > theta)
-                theta = U[i][j] - temp;
-            i--;
-            if (i < 0){
-                i = 2;
-                j++;
+            for (int i = 2; i >= 0; i--)
+            {
+                for (int j = 0; j <= 3; j++){
+                    if (!((i ==0 && j==3)||(i ==1 && j==3)||(i==1&&j==1))){
+                        float[][] actionArr = multiMatrix(actionArr(i, j), 4, 3, pa, 3, 1);
+                        U[i][j] = R + Max(actionArr);
+                    }
+                }
             }
-            if (j > 3){
-                j=0;
-            }
-//            printArr(U, 3, 4);
-            k++;
-        }while (k<5);
-//        }while (theta > 0.01f || theta < 0.01f);
+            theta = MaxNorm(temp, U, 3,4);
+            printArr(U, 3, 4);
+        }while (theta > 0.01f);
 
     }
 
+    /**
+     * 最大值范数
+     */
+    private static float MaxNorm(float[][] arr1, float[][] arr2, int row, int column){
+        float theta = 0f;
+        for (int i = 0; i < row; i++)
+            for (int j = 0; j < column; j++)
+                theta = Math.max(theta, Math.abs(arr1[i][j] - arr2[i][j]));
+        return theta;
+    }
 
     private static float Max(float[][] arr){
         float maximum = arr[0][0];
@@ -64,15 +69,17 @@ public class Main {
         System.out.print("\n");
     }
 
+    /**
+     * 当前row行column列点进行所有动作后的状态点
+     */
     private static float[][] actionArr(int row, int column){
         float[][] a = new float[4][3];
         for (int i = 0; i < 4; i++){
             for (int j = 0; j < 3; j++){
 //                System.out.println(i+"----"+j);
-                a[i][j] = getValidU(row, column, action.values()[(i+j)%4]);
+                a[i][j] = getValidU(row, column, action.values()[((i+j)+3)%4]);
             }
         }
-        printArr(a, 4, 3);
         return a;
     }
 
@@ -93,38 +100,37 @@ public class Main {
         return null;
     }
 
-    //TODO 从1开始
+    //TODO 给出row行column列经过动作a后的状态点
     private static float getValidU(int row, int column, action a){
+        if (row == 0 && column == 3)
+            return U[0][3];
+        if (row == 1 && column == 3)
+            return U[1][3];
         switch (a){
-            case down:
-                if (row == 1 && column == 4)
-                    return U[0][3];
-                if (row == 3)
-                    return U[row-1][column-1];
-                if (row == 1 && column == 2)
-                    return U[row - 1][column-1];
-                return U[row][column-1];
             case up:
-                if (row == 1 && column == 4)
-                    return U[0][3];
-                if (row == 1)
-                    return U[row-1][column-1];
-                if (row == 3 && column == 2)
-                    return U[row-1][column-1];
-                return U[row-2][column-1];
-            case right:
-                if (row == 1 && column == 4)
-                    return U[0][3];
-                if (column == 1)
-                    return U[row-1][column-1];
-                if (row == 2 && column == 3)
-                    return U[row-1][column-1];
-                return U[row-1][column-2];
-            case left:
-                if (column == 4)
-                    return U[row-1][column-1];
+                if (row == 0)
+                    return U[0][column];
                 if (row == 2 && column == 1)
-                    return U[row-1][column-1];
+                    return U[2][1];
+                return U[row-1][column];
+            case left:
+                if (column == 0)
+                    return U[row][0];
+                if (row == 1 && column == 2)
+                    return U[1][2];
+                return U[row][column-1];
+            case down:
+                if (row == 2)
+                    return U[2][column];
+                if (row == 0 && column == 1)
+                    return U[0][1];
+                return U[row+1][column];
+            case right:
+                if (column == 3)
+                    return U[row][3];
+                if (row == 1 && column == 0)
+                    return U[1][0];
+                return U[row][column+1];
         }
         return 0;
     }
